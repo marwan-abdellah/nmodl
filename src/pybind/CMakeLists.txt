@@ -3,7 +3,7 @@
 # =============================================================================
 set_source_files_properties(${PYBIND_GENERATED_SOURCES} PROPERTIES GENERATED TRUE)
 
-# build nmodl python module under lib/python/nmodl
+# build nmodl python module under lib/nmodl
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/nmodl)
 
 foreach(
@@ -68,8 +68,7 @@ add_custom_command(
   OUTPUT ${NMODL_PYTHON_FILES_OUT}
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${NMODL_PROJECT_SOURCE_DIR}/nmodl
           ${PROJECT_BINARY_DIR}/lib/nmodl
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:_nmodl>
-          ${PROJECT_BINARY_DIR}/lib/nmodl
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:_nmodl> ${PROJECT_BINARY_DIR}/nmodl
   DEPENDS ${NMODL_PYTHON_FILES_IN} $<TARGET_FILE:_nmodl>
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PROJECT_BINARY_DIR}/lib/nmodl/libpywrapper.so
           ${PROJECT_BINARY_DIR}/lib
@@ -86,4 +85,15 @@ file(COPY ${NMODL_PROJECT_SOURCE_DIR}/nmodl/ext DESTINATION ${CMAKE_BINARY_DIR}/
 # =============================================================================
 # Install python binding components
 # =============================================================================
-install(DIRECTORY ${CMAKE_BINARY_DIR}/lib DESTINATION lib)
+# scikit already installs the package in /nmodl. If we add it another time things are installed
+# twice with the wheel and in wierd places. Let's just move the .so libs
+if(SKBUILD)
+  install(
+    DIRECTORY ${CMAKE_BINARY_DIR}/lib/nmodl/
+    DESTINATION nmodl
+    FILES_MATCHING
+    PATTERN "*.so")
+  install(FILES ${CMAKE_BINARY_DIR}/lib/libpywrapper.so DESTINATION nmodl/.data/)
+else()
+  install(DIRECTORY ${CMAKE_BINARY_DIR}/lib/ DESTINATION lib)
+endif(SKBUILD)
